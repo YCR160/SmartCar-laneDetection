@@ -15,4 +15,3 @@ def getConfig(dir):
 
 
 __all__ = ["getConfig"]
-

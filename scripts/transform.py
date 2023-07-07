@@ -4,7 +4,9 @@ import numpy as np
 import cv2
 from functools import lru_cache
 import numba as nb
-#import numexpr as ne
+# import numexpr as ne
+
+
 def getPerMat(fromPoints: List[Tuple[int]], toPoints: List[Tuple[int]]) -> List[float]:
     """用cv2生成变换矩阵
 
@@ -16,6 +18,8 @@ def getPerMat(fromPoints: List[Tuple[int]], toPoints: List[Tuple[int]]) -> List[
         List[float]: 生成的变换矩阵
     """
     return cv2.getPerspectiveTransform(np.array(fromPoints, dtype="float32"), np.array(toPoints, dtype="float32")).astype("float32").flatten()
+
+
 @nb.jit(nopython=True)
 def axisTransform(i: int, j: int, perMat: np.array) -> Tuple[float]:
     """使用变换矩阵映射坐标
@@ -28,17 +32,17 @@ def axisTransform(i: int, j: int, perMat: np.array) -> Tuple[float]:
     Returns:
         Tuple[float]: 以浮点数形式返回变换后的 (i, j)
     """
-    #cdef float a = 0
-    #cdef float b = 0
-    #cdef float c = 0
+    # cdef float a = 0
+    # cdef float b = 0
+    # cdef float c = 0
     a = i * perMat[0] + j * perMat[1] + perMat[2]
     b = i * perMat[3] + j * perMat[4] + perMat[5]
     c = i * perMat[6] + j * perMat[7] + perMat[8]
-    #x = np.array([i,j,1])
-    #y = np.array(perMat).reshape(3, 3)
-    #t = np.dot(x,y.T)
-    #return t[0] / t[2], t[1] / t[2]
-    #print(a, b)
+    # x = np.array([i,j,1])
+    # y = np.array(perMat).reshape(3, 3)
+    # t = np.dot(x,y.T)
+    # return t[0] / t[2], t[1] / t[2]
+    # print(a, b)
     return a / c, b / c
 
 
@@ -101,9 +105,11 @@ def writeFile(perMat: np.array) -> None:
         perMat (np.array): 变换矩阵
     """
     with open("PERMAT.cpp", "w") as f:
-        f.write("typedef unsigned int uint32;  // clang-format off\nextern const uint32 PERMAT[9]{0x")
+        f.write(
+            "typedef unsigned int uint32;  // clang-format off\nextern const uint32 PERMAT[9]{0x")
         tmp = perMat.tobytes().hex(" ", 4).split()
-        tmp = tmp = ["".join(a[i : i + 2] for i in range(6, -1, -2)) for a in tmp]
+        tmp = tmp = ["".join(a[i: i + 2]
+                             for i in range(6, -1, -2)) for a in tmp]
         f.write(",0x".join(tmp) + "};")
 
 
