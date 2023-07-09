@@ -2,6 +2,9 @@
 
 .vscode/
 
+# Cpython compiled product
+*.c
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,12 +1,15 @@
 class ParaCurve:
-    "用于处理抛物线拟合得到的中线"
+    """
+    用于处理抛物线拟合得到的中线
+    """
 
     def __init__(self, PI: float, PJ: float) -> None:
-        "初始化"
         self.PI, self.PJ = PI, PJ
 
     def set(self, a_: float, b_: float, c_: float) -> None:
-        "设置抛物线参数"
+        """
+        设置抛物线参数
+        """
         self.a, self.b, self.c = a_, b_, c_
         self.da = 4 * self.a * self.a
         self.db = 6 * self.a * self.b
@@ -17,15 +20,21 @@ class ParaCurve:
         self.ddc = 4 * self.a * (self.c - self.PJ) + 2 * self.b * self.b + 2
 
     def val(self, x: float) -> float:
-        "计算函数值"
+        """
+        计算函数值 a * x^2 + b * x + c
+        """
         return self.a * x * x + self.b * x + self.c
 
     def vald(self, x: float) -> float:
-        "计算斜率"
+        """
+        计算斜率 2 * a * x + b
+        """
         return 2 * self.a * x + self.b
 
     def perpendicular(self) -> float:
-        "用牛顿迭代法求过小车点在抛物线上的垂足"
+        """
+        用牛顿迭代法求过小车点在抛物线上的垂足
+        """
 
         def calc(x: float) -> float:
             return self.da * x * x * x + self.db * x * x + self.dc * x + self.dd
