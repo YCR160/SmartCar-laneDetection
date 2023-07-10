@@ -1,4 +1,4 @@
-#cython: language_level=3
+# cython: language_level=3
 import numpy as np
 from typing import Tuple
 from .transform import getPerMat, axisTransform, transfomImg
@@ -8,12 +8,13 @@ from math import atan
 from Config import *
 from math import sqrt, cos, acos, degrees, radians, atan2
 import time
-from .ImgShow import ShowImg 
+from .ImgShow import ShowImg
 import serial
 import struct
 import cv2
-#fourcc = cv2.VideoWriter_fourcc(*'XVID')
-#out = cv2.VideoWriter('output.avi',fourcc,60.0,(200,200))
+
+# fourcc = cv2.VideoWriter_fourcc(*'XVID')
+# out = cv2.VideoWriter('output.avi',fourcc,60.0,(200,200))
 ser = serial.Serial('/dev/ttyPS1', 460800, timeout=1)
 global roundC, lastYaw, turnFlag, forkFlag, fS, forkC, wFlag, wS, wC, lineF1, lineF2, lineF3, lineC, redC
 global j1, x_last, p_last
@@ -39,6 +40,8 @@ j1 = 0
 j2 = 0
 lastYaw = 0
 rFlag = 0
+
+
 class PointEliminator:
     "通过判断新的点和前面点的连线斜率是否在特定区间来决定是否保留这个点"
 
@@ -59,31 +62,38 @@ class PointEliminator:
         self.n += 1
 
     def check(self, i: float, j: float) -> bool:
+        """
+        用于判断新的点和前面点的连线斜率是否在特定区间，可以去除不必要的点
+        Args:
+            i (float): 新的点的i坐标
+            j (float): 新的点的j坐标
+        """
         k = (j - self.J[self.n & 1]) / (i - self.I[self.n & 1])
         if self.invert:
             k = -k
         return K_LOW < k < K_HIGH
 
     def update(self, i: float, j: float) -> None:
+        """
+        用于实现对车道线的实时优化和跟踪，跟踪车道线的变化
+        Args:
+            i (float): 新的点的i坐标
+            j (float): 新的点的j坐标
+        """
+        # 类中点的数量小于 2
         if self.n < 2:
             self.insert(i, j)
+        # 判断新的点和前面点的连线斜率在特定区间
         elif self.check(i, j):
             self.insert(i, j)
-            self.fitter.update(i, j)
-            #self.main.ppoint((i, j), self.color)
+            self.fitter.update(i, j) # 对车道线进行拟合和优化
+            # self.main.ppoint((i, j), self.color)
         else:
-            self.n = 0
+            self.n = 0 # 类中点的数量重置为 0
 
 
 class ImgProcess:
-    "图像处理类"
-
     def __init__(self) -> None:
-        """图像处理类
-
-        Args:
-            Config (dict): 通过 getConfig() 获取的配置
-        """
         self.fitter = [Polyfit2d() for u in range(2)]
         self.pointEliminator = [PointEliminator(self) for u in range(2)]
         self.applyConfig()
@@ -95,10 +105,11 @@ class ImgProcess:
         self.roundaboutEntering = RoundaboutEntering()
         self.F = 0
         self.landmark = {"StartLine": False, "Hill": False, "Roundabout1": False, "Fork": False, "Yaw": 0.0}
-        #print("ImgProcess")
+        # print("ImgProcess")
 
     def setImg(self, img: np.ndarray) -> None:
-        """设置当前需要处理的图像
+        """
+        设置当前需要处理的图像
 
         Args:
             img (np.ndarray): 使用 cv2.imread(xxx, 0) 读入的灰度图
@@ -110,57 +121,61 @@ class ImgProcess:
         #     for j in range(M):
         #         img[i, j] = 255 if self.isEdge(i, j) else 0
         # self.img = img.tolist()
-        #self.SrcShow = ZoomedImg(img, SRCZOOM)
-        #self.PerShow = ZoomedImg(transfomImg(img, self.PERMAT, N, M, N_, M_, I_SHIFT, J_SHIFT), PERZOOM)
+        # self.SrcShow = ZoomedImg(img, SRCZOOM)
+        # self.PerShow = ZoomedImg(transfomImg(img, self.PERMAT, N, M, N_, M_, I_SHIFT, J_SHIFT), PERZOOM)
+
     def applyConfig(self) -> None:
         "从main窗口获取图像处理所需参数"
         self.PERMAT = getPerMat(SRCARR, PERARR)  # 逆透视变换矩阵
         self.REPMAT = getPerMat(PERARR, SRCARR)  # 反向逆透视变换矩阵
 
         self.SI, self.SJ = N - 1, M >> 1
-        self.PI, self.PJ = axisTransform(self.SI, self.SJ, self.PERMAT)
+        self.PI, self.PJ = axisTransform(self.SI, self.SJ, self.PERMAT) # 使用变换矩阵映射坐标
         self.PI = PI
-        #print(f"PI {self.PI}\nPJ {self.PJ}")
-        #print(f"FORKLOW {cos(radians(FORKHIGH))}f\nFORKHIGH {cos(radians(FORKLOW))}f")
+        # print(f"PI {self.PI}\nPJ {self.PJ}")
+        # print(f"FORKLOW {cos(radians(FORKHIGH))}f\nFORKHIGH {cos(radians(FORKLOW))}f")
 
     def point(self, pt: Tuple[int], color: Tuple[int] = (255, 255, 0), r: int = 4) -> None:
         "输入原图上的坐标，同时在原图和新图上画点"
         i, j = pt
-        I, J = axisTransform(i, j, self.PERMAT)
+        I, J = axisTransform(i, j, self.PERMAT) # 逆透视变换矩阵
 
     def ppoint(self, pt: Tuple[int], color: Tuple[int] = (255, 255, 0), r: int = 4) -> None:
         "输入原图上的坐标，同时在原图和新图上画点"
         i, j = pt
-        I, J = axisTransform(i, j, self.REPMAT)
+        I, J = axisTransform(i, j, self.REPMAT) # 反向逆透视变换矩阵
 
     def line(self, p1: Tuple[int], p2: Tuple[int], color: Tuple[int] = (0, 0, 255), thickness: int = 2) -> None:
+        "图像上绘制线段"
         (i1, j1), (i2, j2) = p1, p2
-        pi1, pj1 = axisTransform(i1, j1, self.PERMAT)
+        pi1, pj1 = axisTransform(i1, j1, self.PERMAT) # 逆透视变换矩阵
         pi2, pj2 = axisTransform(i2, j2, self.PERMAT)
 
     def pline(self, p1: Tuple[int], p2: Tuple[int], color: Tuple[int] = (0, 0, 255), thickness: int = 2) -> None:
+        "图像上绘制线段"
         (i1, j1), (i2, j2) = p1, p2
-        pi1, pj1 = axisTransform(i1, j1, self.REPMAT)
+        pi1, pj1 = axisTransform(i1, j1, self.REPMAT) # 反向逆透视变换矩阵
         pi2, pj2 = axisTransform(i2, j2, self.REPMAT)
+
     def sobel(self, i: int, j: int, lr: int = LRSTEP) -> int:
-        "魔改的sobel算子"
+        "魔改的 sobel 算子"
         il = max(CUT, i - UDSTEP)
         ir = min(N - 1, i + UDSTEP)
         jl = max(PADDING, j - lr)
         jr = min(M - PADDING - 1, j + lr)
-        #print(self.img[il][jl] , self.img[ir][jr])
+        # print(self.img[il][jl] , self.img[ir][jr])
         return abs(self.img[il][jl] - self.img[ir][jr]) + abs(self.img[il][j] - self.img[ir][j]) + abs(self.img[i][jl] - self.img[i][jr]) + abs(self.img[il][jr] - self.img[ir][jl])
 
     def isEdge(self, i: int, j: int):
-        "检查(i, j)是否是边界"
+        "检查 (i, j) 是否是边界"
         return self.sobel(i, j) >= THRESHLOD
 
     def checkI(self, i: int) -> bool:
-        "检查i是否没有越界"
+        "检查 i 是否没有越界"
         return CUT <= i < N
 
     def checkJ(self, j: int) -> bool:
-        "检查j是否没有越界"
+        "检查 j 是否没有越界"
         return PADDING <= j < M - PADDING
 
     def checkCornerIJ(self, i: int, j: int) -> bool:
@@ -173,34 +188,42 @@ class ImgProcess:
         return ((k * i) // 3) + b
 
     def searchK(self, k: int) -> int:
-        "沿'斜率'k搜索黑色"
-        #if draw and color is None:
-        #    color = (randint(0, 255), randint(0, 255), randint(0, 255))a
+        "沿'斜率'k搜索黑色，并返回最后一个搜索到的黑色像素点的行号"
+        # if draw and color is None:
+        #     color = (randint(0, 255), randint(0, 255), randint(0, 255))a
         cdef int i = N - 1
         cdef int j = 0
         cdef int[:,:] canny = np.array(self.canny, dtype = np.int32)
         while True:
             i -= searchKn
-            j = self.calcK(i, k) 
+            j = self.calcK(i, k)
             self.canny2[i, j, 0] = 255
             if not (self.checkCornerIJ(i, j) and  canny[i,j + 1] == 0 and canny[i, j] == 0 and canny[i, j - 1] == 0):
                 return i + 1
+
     def searchRow(self, i: int, j: int, isRight: bool, draw: bool = False, color: Tuple[int] = None) -> int:
         "按行搜索左右的黑色"
         cdef int ans = 0
-        if isRight:
+        if isRight: # 搜索方向是否向右？可能吧……
+            # 根据 isRight 的值，计算出需要搜索的像素点范围
+            # 找到该范围内第一个非零像素点的位置
             s = np.nonzero(self.canny[i,j:M-1])
+            # 如果该范围内没有非零像素点，则返回 M-1，表示搜索到了图像的边缘
             if len(s[0]) == 0:
                 ans = M - 1
             else:
                 ans = s[0][0] + j
         else:
+            # 根据 isRight 的值，计算出需要搜索的像素点范围
+            # 找到该范围内第一个非零像素点的位置
             s = np.nonzero(self.canny[i,0:j])
+            # 如果该范围内没有非零像素点，则返回 0，表示搜索到了图像的边缘
             if len(s[0]) == 0:
                 ans = 0
             else:
-                ans = s[0][-1]    
+                ans = s[0][-1]
         return ans
+
     def searchRow2(self, i: int, j: int, isRight: bool, draw: bool = False, color: Tuple[int] = None) -> int:
         "按行搜索左右的黑色"
         if draw and color is None:
@@ -209,6 +232,7 @@ class ImgProcess:
         while self.checkJ(j) and not self.isEdge(i, j):
             j += STEP
         return j
+
     def searchRow1(self, i: int, j: int, isRight: bool, last: int) -> int:
         "按行搜索左右的黑色"
         STEP = 1 if isRight else -1
@@ -216,10 +240,11 @@ class ImgProcess:
             j = last - 5
         if not isRight and not (last == 0):
             j = last + 5
-        #while self.checkJ(j) and not self.isEdge(i, j):
-        while self.canny[i, j] == 0 and self.checkJ(j):   
+        # while self.checkJ(j) and not self.isEdge(i, j):
+        while self.canny[i, j] == 0 and self.checkJ(j):
             j += STEP
         return j
+
     def getK(self, draw: bool = False) -> None:
         "获取最远前沿所在的'斜率'K"
         self.I = self.K = 0x7FFFFFFF
@@ -250,7 +275,7 @@ class ImgProcess:
     def getEdge(self, draw: bool = False):
         "逐行获取边界点"
         self.checkLeft = 0
-        #self.canny = cv2.Canny(self.image_data, 50, 150)
+        # self.canny = cv2.Canny(self.image_data, 50, 150)
         lastside = [0, M - 1]
         left = []
         leftx = []
@@ -267,10 +292,10 @@ class ImgProcess:
             self.hillChecker[u].reset()
             self.pointEliminator[u].reset(u ^ 1, self.fitter[u], COLORS[u + 4])
             self.sideForkChecker[u].reset()
-        #print(N - 1, self.I - 1)
+        # print(N - 1, self.I - 1)
         tot = 0
         for I in range(N - 1, self.I - 1, -2):
-            #start = time.time()
+            # start = time.time()
             J = self.calcK(I, self.K)
             if testF1:
                 side = [self.searchRow(I, J, u) for u in range(2)]
@@ -290,15 +315,15 @@ class ImgProcess:
             if not side[1] == M - 1 and I > FitC:
                 right.append(side[1])
                 rightx.append(I)
-            #lastside = side
-            #print(side)
+            # lastside = side
+            # print(side)
             self.canny2[I, side[0], 1] = 100
             self.canny2[I, side[1], 2] = 100
             pj = [0.0] * 2
             nolost = True
-            #end = time.time()
-            #print("side", end - start)
-            #start = time.time()
+            # end = time.time()
+            # print("side", end - start)
+            # start = time.time()
             for u in range(2):
                 if self.checkJ(side[u]):
                     pi, pj[u] = axisTransform(I, side[u], self.PERMAT)
@@ -312,7 +337,7 @@ class ImgProcess:
                     self.sideForkChecker[u].lost()
             if nolost:
                 width = pj[1] - pj[0]
-                #print(width)
+                # print(width)
                 self.roundaboutChecker.update(width, pi, side[0], -side[1])
             else:
                 self.roundaboutChecker.lost()
@@ -330,13 +355,13 @@ class ImgProcess:
         if len(reg2) == 0:
             k2 = [10]
             reg2 = [Scheck * 2]
-        #print(reg1)
-        #print(reg2)
+        # print(reg1)
+        # print(reg2)
         self.S = (reg1[0] + reg2[0]) / 2
         self.leftK = abs(k1[0])
         self.rightK = abs(k2[0])
-            #end = time.time()
-            #print("ot", end - start)
+            # end = time.time()
+            # print("ot", end - start)
 
     def getMid(self, drawEdge: bool = False) -> bool:
         "获取中线"
@@ -367,7 +392,7 @@ class ImgProcess:
         "获取参考点位置"
         cdef float x = self.paraCurve.perpendicular()
         cdef float y = self.paraCurve.val(x)
-        #self.ppoint((round(x), round(y)), (0, 0, 255))
+        # self.ppoint((round(x), round(y)), (0, 0, 255))
 
         cdef float l = x - DIST
         cdef float r = x
@@ -382,15 +407,15 @@ class ImgProcess:
                 r = self.X1
             else:
                 l = self.X1
-        #print((round(self.X1), round(self.Y1)))
-        #self.canny2[round(self.Y1), round(self.X1), 0] = 255
-        #self.ppoint((round(self.X1), round(self.Y1)), (255, 127, 255), 6)
+        # print((round(self.X1), round(self.Y1)))
+        # self.canny2[round(self.Y1), round(self.X1), 0] = 255
+        # self.ppoint((round(self.X1), round(self.Y1)), (255, 127, 255), 6)
 
     def solve(self):
         "获取目标偏航角"
-        #print(self.PI)
-        #print(self.PJ)
-        #print((self.Y1 - self.PJ, self.PI - X0 - self.X1))
+        # print(self.PI)
+        # print(self.PJ)
+        # print((self.Y1 - self.PJ, self.PI - X0 - self.X1))
         self.landmark["Yaw"] = atan2(self.Y1 - self.PJ, self.PI - X0 - self.X1)
 
     def checkStartLine(self, i: int) -> bool:
@@ -434,9 +459,9 @@ class ImgProcess:
         "入环岛获取中线"
         U ^= 1
 
-        #cdef float dpi, dpj
+        # cdef float dpi, dpj
         dpi, dpj = axisTransform(N - 1, self.searchRow(N - 1, M >> 1, U), self.PERMAT)
-        #self.ppoint((self.roundaboutEntering.i, self.roundaboutEntering.j)), self.ppoint((dpi, dpj))
+        # self.ppoint((self.roundaboutEntering.i, self.roundaboutEntering.j)), self.ppoint((dpi, dpj))
         self.fitter[U].twoPoints(dpi, dpj, self.roundaboutEntering.i, self.roundaboutEntering.j)
 
         px = list(range(-I_SHIFT, N_ - I_SHIFT))
@@ -466,8 +491,6 @@ class ImgProcess:
         px = list(range(-I_SHIFT, N_ - I_SHIFT))
         py = [self.paraCurve.val(v) for v in px]
 
-    
-        # 环岛
     def kalman(self,z_measure,x_last=0,p_last=0,Q=0.018,R=0.0542):
         x_mid = x_last
         p_mid = p_last + Q
@@ -477,6 +500,7 @@ class ImgProcess:
         p_last = p_now
         x_last = x_now
         return x_now,p_last,x_last
+
     def work(self, fcolor1, fcolor2, countRed, countRed2):
         self.rightYaw = 0
         self.C = 0
@@ -485,44 +509,44 @@ class ImgProcess:
         self.canny = cv2.Canny(self.image_data, cannydown, cannyup)
         kernel = np.ones((kn, kn), np.uint8)
         self.canny = cv2.dilate(self.canny, kernel)
-        #ret, self.thresh = cv2.threshold(self.image_data[:,80:175], blackN, 255, cv2.THRESH_BINARY_INV)
-        #nonzero = np.nonzero(self.thresh)
-        #x = nonzero[0]
-        #y = nonzero[1]#mask = cv2.inRange(hsv,lower_red,upper_red)+cv2.inRange(hsv,lower_red2,upper_red2) #提取所需颜色
-        #if (len(x)) > 10:
-        #    k,reg,_,_,_=np.polyfit(x,y,1,full = True)
-        #    self.kBlack = abs(k[0])
-        #else:
-        #    self.kBlack = 0
-        #cv2.imshow('1',self.canny)
-        #cv2.waitKey(1)
+        # ret, self.thresh = cv2.threshold(self.image_data[:,80:175], blackN, 255, cv2.THRESH_BINARY_INV)
+        # nonzero = np.nonzero(self.thresh)
+        # x = nonzero[0]
+        # y = nonzero[1]#mask = cv2.inRange(hsv,lower_red,upper_red)+cv2.inRange(hsv,lower_red2,upper_red2) #提取所需颜色
+        # if (len(x)) > 10:
+        #     k,reg,_,_,_=np.polyfit(x,y,1,full = True)
+        #     self.kBlack = abs(k[0])
+        # else:
+        #     self.kBlack = 0
+        # cv2.imshow('1',self.canny)
+        # cv2.waitKey(1)
         global roundC, lastYaw, rFlag, sFlag, p_last, x_last, turnFlag, forkFlag, fS, forkC, wFlag, wS, wC, lineF1, lineF2, lineF3, lineC, redC
         self.Yaw = lastYaw
         self.canny2 = cv2.cvtColor(self.canny, cv2.COLOR_GRAY2BGR)
-        #print("work")
+        # print("work")
         "图像处理的完整工作流程"
         self.landmark["StartLine"] = self.checkStartLine(STARTLINE_I1) or self.checkStartLine(STARTLINE_I2)
         self.getK(True)
         end = time.time()
-        #print("getK",end - start)
+        # print("getK",end - start)
         start = time.time()
         "正常"
         self.getEdge()
         end = time.time()
-        #print("checkLeft",self.checkLeft)
-        #print("fK=",self.K)
+        # print("checkLeft",self.checkLeft)
+        # print("fK=",self.K)
         start = time.time()
         self.landmark["Hill"] = self.hillChecker[0].check() and self.hillChecker[1].check() and self.hillChecker[0].calc() + self.hillChecker[1].calc() > HILL_DIFF
         self.landmark["Roundabout1"] = "None" if not self.roundaboutChecker.check() else "Right" if self.roundaboutChecker.side else "Left"
         self.landmark["Fork"] = self.frontForkChecker.res and (self.sideForkChecker[0].res or self.sideForkChecker[1].res)
         midYaw = 0
         end = time.time()
-        #print("getM",end - start)
+        # print("getM",end - start)
         start = time.time()
-        #if self.landmark["Roundabout1"] == "Right":
-        #    isRight = True
-        #    if self.roundaboutGetCorner(isRight) and rFlag == 0:
-        #        rFlag = 1
+        # if self.landmark["Roundabout1"] == "Right":
+        #     isRight = True
+        #     if self.roundaboutGetCorner(isRight) and rFlag == 0:
+        #         rFlag = 1
         Kflag = 0
         if self.K <= 0:
             if self.leftK <= Kcheck:
@@ -537,9 +561,9 @@ class ImgProcess:
             isRight = True
             if rFlag == 0:
                 rFlag = 1
-            #self.roundaboutGetCorner(isRight)
+            # self.roundaboutGetCorner(isRight)
             if self.roundaboutGetCorner(isRight):
-                #print("Yes")
+                # print("Yes")
                 if rFlag == 1:
                     rFlag = 2
                 self.roundaboutGetInMid(isRight)
@@ -563,12 +587,12 @@ class ImgProcess:
                 self.solve()
                 if rFlag == 2 and roundC < roundCheck0:
                     self.landmark["Yaw"] = inRoundYaw
-        #print(self.landmark["Yaw"])
+        # print(self.landmark["Yaw"])
         elif self.getMid(True) and (self.F < Fcheck1 or Kflag == 1):
-        #    #print(1)
+            # print(1)
             self.getTarget()
             self.solve()
-            #print('inMid')
+            # print('inMid')
         elif self.K >= 0:
             if self.getMid(True):
                 self.getTarget()
@@ -592,20 +616,20 @@ class ImgProcess:
             if midYaw * self.landmark["Yaw"] < 0:
                 self.landmark["Yaw"] = midYaw
         end = time.time()
-        #print(end - start)
-        #print("rFlag=",rFlag)
-        #if sFlag == 0 and self.roundaboutGetCorner(0) and self.roundaboutGetCorner(1):
-        #    sFlag = 1
-        #elif sFlag == 1 and (self.roundaboutGetCorner(0) == 0 or self.roundaboutGetCorner(1) == 0):
-        #    sFlag = 2
-        #elif sFlag == 2 and self.roundaboutGetCorner(0) and self.roundaboutGetCorner(1):
-        #    sFlag = 3
-        #elif sFlag == 3 and (self.roundaboutGetCorner(0) == 0 or self.roundaboutGetCorner(1) == 0):
-        #    sFlag = 0
-        #print('sFlag =',sFlag)
-        #print('F=',self.F)
-        #print('S=',self.S)
-        #print('C=',self.C)
+        # print(end - start)
+        # print("rFlag=",rFlag)
+        # if sFlag == 0 and self.roundaboutGetCorner(0) and self.roundaboutGetCorner(1):
+        #     sFlag = 1
+        # elif sFlag == 1 and (self.roundaboutGetCorner(0) == 0 or self.roundaboutGetCorner(1) == 0):
+        #     sFlag = 2
+        # elif sFlag == 2 and self.roundaboutGetCorner(0) and self.roundaboutGetCorner(1):
+        #     sFlag = 3
+        # elif sFlag == 3 and (self.roundaboutGetCorner(0) == 0 or self.roundaboutGetCorner(1) == 0):
+        #     sFlag = 0
+        # print('sFlag =',sFlag)
+        # print('F=',self.F)
+        # print('S=',self.S)
+        # print('C=',self.C)
         isRight = False
         pred = 0
         self.pred = 0
@@ -651,12 +675,12 @@ class ImgProcess:
         elif (fS == 3):
             fS = 0
             forkFlag = 0
-            forkC = 0    
+            forkC = 0
         print('fS=',fS)
         print('fF=',forkFlag)
-        #print('FC=',forkC)
-        #print('endF')
-        
+        # print('FC=',forkC)
+        # print('endF')
+
         if (wS == 0 and wFlag == 1 and self.checkLeft > wLeft):
             wS = 1
             wC = 0
@@ -676,23 +700,23 @@ class ImgProcess:
                 wS = 0
                 wFlag = 0
                 wC = 0
-        #elif (wS == 2 and wFlag == 1):
-        #    if self.F > wFcheck:
-        #        self.landmark["Yaw"] = wYawOut
-        #    if fcolor2[0] > light and fcolor2[1] > light and fcolor2[2] > light:
-        #        wS = 0
-        #        wFlag = 0
-        #        wC = 0
+        # elif (wS == 2 and wFlag == 1):
+        #     if self.F > wFcheck:
+        #         self.landmark["Yaw"] = wYawOut
+        #     if fcolor2[0] > light and fcolor2[1] > light and fcolor2[2] > light:
+        #         wS = 0
+        #         wFlag = 0
+        #         wC = 0
         self.wS = wS
         print("redC=",redC)
         print("I=",self.I)
-        #print('beginw')
-        #print('ws = ',wS)
-        #print('wc = ',wC)
-        #print('endw')
-        
-        #print('turnFlag=',turnFlag)
-        #print('startline ======', self.landmark["StartLine"])
+        # print('beginw')
+        # print('ws = ',wS)
+        # print('wc = ',wC)
+        # print('endw')
+
+        # print('turnFlag=',turnFlag)
+        # print('startline ======', self.landmark["StartLine"])
         if lineF3 == 2:
             lineF3 = 0
         if lineF2 >= 1 and setlineF == 1:
@@ -716,9 +740,9 @@ class ImgProcess:
                 lineF1 = 0
                 lineF2 = 1
         print("lineF2=",lineF2)
-        print("lineF1 = ",lineF1)     
+        print("lineF1 = ",lineF1)
         print("Yaw = ", self.landmark["Yaw"])
-        print("RoundF = ", rFlag)  
+        print("RoundF = ", rFlag)
         if ser.isOpen():
             #print('send')
             str = struct.pack('f',self.landmark["Yaw"]) #返回偏角
@@ -728,7 +752,7 @@ class ImgProcess:
             ser.write(str2)
             if self.S <= Scheck and rFlag == 0:
                 ser.write('i'.encode('utf-8')) #长直道
-            elif (self.F >= Fcheck1 and not Kflag) or not rFlag == 0 or forkFlag == forkWan or wC >= wCset3 or lineF3 == 1: 
+            elif (self.F >= Fcheck1 and not Kflag) or not rFlag == 0 or forkFlag == forkWan or wC >= wCset3 or lineF3 == 1:
                 ser.write('n'.encode('utf-8')) #靠近弯道
             elif self.F >= Fcheck2:
                 ser.write('a'.encode('utf-8')) #较为靠近弯道
@@ -744,19 +768,19 @@ class ImgProcess:
             else:
                 ser.write('u'.encode('utf-8')) #环内
             ser.write('bb'.encode('utf-8'))
-        #print('Yaw=',self.landmark["Yaw"])
-        #print(self.landmark["Roundabout1"])
-        #print('pred=',pred)
-        #print('k=',self.K)
-        #out.write(self.image_data)
-        #SRC = np.array(SRCARR,dtype=np.float32)
-        #SRC = SRC[:, [1 , 0]]
-        #PER = np.array(PERARR,dtype=np.float32)
-        #PER = PER[:, [1 , 0]]
-        #H = cv2.getPerspectiveTransform(SRC, PER)
-        #WarpedImg = cv2.warpPerspective(self.image_data, H, (200,200))
-        #ShowImg(self.image_data, H)
-        #cv2.imshow('1',self.canny2)
-        #cv2.waitKey(1)
+        # print('Yaw=',self.landmark["Yaw"])
+        # print(self.landmark["Roundabout1"])
+        # print('pred=',pred)
+        # print('k=',self.K)
+        # out.write(self.image_data)
+        # SRC = np.array(SRCARR,dtype=np.float32)
+        # SRC = SRC[:, [1 , 0]]
+        # PER = np.array(PERARR,dtype=np.float32)
+        # PER = PER[:, [1 , 0]]
+        # H = cv2.getPerspectiveTransform(SRC, PER)
+        # WarpedImg = cv2.warpPerspective(self.image_data, H, (200,200))
+        # ShowImg(self.image_data, H)
+        # cv2.imshow('1',self.canny2)
+        # cv2.waitKey(1)
+
 __all__ = ["ImgProcess"]
-#

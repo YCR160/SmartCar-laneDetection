@@ -7,7 +7,8 @@ from functools import lru_cache
 import numba as nb
 
 def getPerMat(fromPoints: List[Tuple[int]], toPoints: List[Tuple[int]]) -> List[float]:
-    """用cv2生成变换矩阵
+    """
+    用cv2生成变换矩阵
 
     Args:
         fromPoints (List[Tuple[int]]): 原图上的4个点
@@ -19,7 +20,8 @@ def getPerMat(fromPoints: List[Tuple[int]], toPoints: List[Tuple[int]]) -> List[
     return cv2.getPerspectiveTransform(np.array(fromPoints, dtype="float32"), np.array(toPoints, dtype="float32")).astype("float32").flatten()
 
 def axisTransform(i: int, j: int, perMat: np.array) -> Tuple[float]:
-    """使用变换矩阵映射坐标
+    """
+    使用变换矩阵映射坐标
 
     Args:
         i (int): 行号
@@ -29,21 +31,22 @@ def axisTransform(i: int, j: int, perMat: np.array) -> Tuple[float]:
     Returns:
         Tuple[float]: 以浮点数形式返回变换后的 (i, j)
     """
-    #cdef float a = 0
-    #cdef float b = 0
-    #cdef float c = 0
-    #a = i * perMat[0] + j * perMat[1] + perMat[2]
-    #b = i * perMat[3] + j * perMat[4] + perMat[5]
-    #c = i * perMat[6] + j * perMat[7] + perMat[8]
+    # cdef float a = 0
+    # cdef float b = 0
+    # cdef float c = 0
+    # a = i * perMat[0] + j * perMat[1] + perMat[2]
+    # b = i * perMat[3] + j * perMat[4] + perMat[5]
+    # c = i * perMat[6] + j * perMat[7] + perMat[8]
+    # return a / c, b / c
     x = np.array([i,j,1])
     y = np.array(perMat).reshape(3, 3)
     t = np.dot(x,y.T)
     return t[0] / t[2], t[1] / t[2]
-    #return a / c, b / c
 
 
 def transfomImg(src: np.ndarray, perMat: np.array, N: int, M: int, N_: int, M_: int, i_shift: int, j_shift: int) -> np.ndarray:
-    """使用变换矩阵对图像进行逆透视变换并返回变换后的图像
+    """
+    使用变换矩阵对图像进行逆透视变换并返回变换后的图像
 
     Args:
         src (np.ndarray): 原图
@@ -58,6 +61,10 @@ def transfomImg(src: np.ndarray, perMat: np.array, N: int, M: int, N_: int, M_: 
     Returns:
         np.ndarray: 变换后的图像
     """
+    # 可能会提高性能的两行
+    # cdef np.ndarray[np.uint8_t, ndim=2] per = np.zeros((N_, M_), dtype=np.uint8)
+    # cdef int i, j, u, v
+
     per = np.zeros((N_, M_), "uint8")
     for i in range(N):
         for j in range(M):
@@ -70,7 +77,8 @@ def transfomImg(src: np.ndarray, perMat: np.array, N: int, M: int, N_: int, M_: 
 
 
 def transfomImgP(src: np.ndarray, perMat: np.array, N: int, M: int, N_: int, M_: int, i_shift: int, j_shift: int) -> np.ndarray:
-    """使用变换矩阵对图像进行逆透视变换并返回变换后的图像
+    """
+    使用变换矩阵对图像进行逆透视变换并返回变换后的图像
 
     Args:
         src (np.ndarray): 原图
@@ -85,6 +93,10 @@ def transfomImgP(src: np.ndarray, perMat: np.array, N: int, M: int, N_: int, M_:
     Returns:
         np.ndarray: 变换后的图像
     """
+    # 可能会提高性能的两行
+    # cdef np.ndarray[np.uint8_t, ndim=2] per = np.zeros((N_, M_), dtype=np.uint8)
+    # cdef int u, v, i, j
+    
     per = np.zeros((N_, M_), "uint8")
     for u in range(N_):
         for v in range(M_):
@@ -95,7 +107,8 @@ def transfomImgP(src: np.ndarray, perMat: np.array, N: int, M: int, N_: int, M_:
 
 
 def writeFile(perMat: np.array) -> None:
-    """将变换矩阵写入文件
+    """
+    将变换矩阵写入文件
 
     Args:
         perMat (np.array): 变换矩阵
