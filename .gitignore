@@ -5,6 +5,9 @@
 # Cpython compiled product
 *.c
 
+# pyx_bk
+pyx_bk/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

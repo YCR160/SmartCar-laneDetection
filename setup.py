@@ -2,6 +2,5 @@
 from distutils.core import setup
 from Cython.Build import cythonize
 setup(ext_modules = cythonize("scripts/ImgProcess.pyx"))
-# setup(ext_modules = cythonize("scripts/Main.pyx"))
-# setup(ext_modules = cythonize("scripts/transform.pyx"))
-# setup(ext_modules = cythonize("scripts/ImgWindow.pyx"))
+setup(ext_modules = cythonize("scripts/transform.pyx"))
+setup(ext_modules = cythonize("scripts/ImgWindow.pyx"))

@@ -29,7 +29,6 @@ class Main:
 
     def __init__(self, Config, DealFlag, ImgQueue) -> None:
         from .ImgWindow import ImgWindow
-        co = 1000  # 这里是录制的一个帧数计数
         # a = []
         # b = []
         lastwS = 0
@@ -38,43 +37,40 @@ class Main:
         down_points = (down_width, down_height)
 
         while True:
-            # print(co)
-            # co = co - 1
             start = time.time()
             ret, frame = capture.read()
-            # print(frame.shape)
-            if not ret or not co:
+            if not ret:
                 break
 
             frame = cv2.resize(frame, down_points,
                                interpolation=cv2.INTER_LINEAR)
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)    # 使用 HSV 颜色空间
 
-            lower_red = np.array([160, 70, 81])             # 设置需要识别的车道线颜色的阈值
-            upper_red = np.array([179, 255, 255])
+            # lower_red = np.array([160, 70, 81])             # 设置需要识别的车道线颜色的阈值
+            # upper_red = np.array([179, 255, 255])
 
-            lower_red2 = np.array([0, 70, 81])              # 设置需要识别的车道线颜色的阈值
-            upper_red2 = np.array([20, 255, 255])
+            # lower_red2 = np.array([0, 70, 81])              # 设置需要识别的车道线颜色的阈值
+            # upper_red2 = np.array([20, 255, 255])
             # dark_blue = np.uint8([[[12,22,121]]])
             # dark_blue = cv2.cvtColor(dark_blue,cv2.COLOR_BGR2HSV)
 
-            mask = cv2.inRange(hsv, lower_red, upper_red) + \
-                cv2.inRange(hsv, lower_red2, upper_red2)    # 提取所需颜色
+            # mask = cv2.inRange(hsv, lower_red, upper_red) + \
+                # cv2.inRange(hsv, lower_red2, upper_red2)    # 提取所需颜色
             # 腐蚀膨胀操作，去除噪声和不必要的细节
-            erode_kernel = np.ones((1, 3), np.uint8)
-            mask = cv2.erode(mask, erode_kernel)
-            dilate_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (37, 10))
-            mask = cv2.dilate(mask, dilate_kernel)
+            # erode_kernel = np.ones((1, 3), np.uint8)
+            # mask = cv2.erode(mask, erode_kernel)
+            # dilate_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (37, 10))
+            # mask = cv2.dilate(mask, dilate_kernel)
             # 在图像的第 50 行到第 79 行之间，提取的颜色在图像中的像素点数量
-            countRed = np.count_nonzero(mask[50:79, :])
-            countRed2 = np.count_nonzero(mask)
-            print("reddddddddddddddddddddddddddd",
-                  countRed)                                 # 此处是为了识别赛道中的红色元素写的红色判断
-            nonzero = np.nonzero(mask)
+            # countRed = np.count_nonzero(mask[50:79, :])
+            # countRed2 = np.count_nonzero(mask)
+            # print("reddddddddddddddddddddddddddd",
+            #       countRed)                                 # 此处是为了识别赛道中的红色元素写的红色判断
+            # nonzero = np.nonzero(mask)
             # x = nonzero[0]
             # y = nonzero[1]
-            if countRed2 > 50:
-                frame[nonzero] = [220, 220, 220]  # 这里将赛道中心的红色标志给去掉，防止干扰后面的赛道识别
+            # if countRed2 > 50:
+            #     frame[nonzero] = [220, 220, 220]  # 这里将赛道中心的红色标志给去掉，防止干扰后面的赛道识别
             fcolor1 = frame[79, 87]
             fcolor2 = frame[60, 87]
             fcolor1 = np.array(fcolor1)
@@ -91,17 +87,17 @@ class Main:
             #    frame[:,:,2] = frame[:,:,2] & mask
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # 将图像转换为灰度图
             self.imgWindow.setImg(frame) # 将图像传入 ImgWindow
-            self.imgWindow.imgProcess.work(
-                fcolor1, fcolor2, countRed, countRed2) # 调用 ImgProcess 的 work 函数
+            self.imgWindow.imgProcess.work(fcolor1, fcolor2, 0, 0) # 调用 ImgProcess 的 work 函数
+            # self.imgWindow.imgProcess.work(
+            #     fcolor1, fcolor2, countRed, countRed2) # 调用 ImgProcess 的 work 函数
 
             # 后面是一些调试输出
-            lastwS = self.imgWindow.imgProcess.wS
+            # lastwS = self.imgWindow.imgProcess.wS
             # a.append(self.imgWindow.imgProcess.landmark["Yaw"])
             # b.append(self.imgWindow.imgProcess.pred)
             output = self.imgWindow.imgProcess.canny2
-            color = (0, 0, 255)
-            # print("down",count)
-            print("F========================", self.imgWindow.imgProcess.F)
+            color = (0, 0, 255) # 蓝色
+            # print("F========================", self.imgWindow.imgProcess.F)
 
             # S 值小于等于 Scheck，则将标记颜色设置为黄色
             if self.imgWindow.imgProcess.S <= Scheck:

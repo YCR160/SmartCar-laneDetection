@@ -78,7 +78,7 @@ Scheck2 = 10        # 置信数量
 CcheckD = 5         # 进环位置
 CcheckU = 30
 Kcheck = -1.5       # 出弯斜率
-testF1 = 1
+testF1 = 1          # 用于 searchRow 函数版本的选择，已弃用
 testF2 = 0
 gauss = 0
 cannydown = 150
@@ -102,7 +102,7 @@ STARTLINE_PADDING = 30
 STARTLINE_COUNT = 15
 lineCheck1 = 20
 lineCheck2 = 70
-lineCheck3 = 20
+lineCheck3 = 20     # 入库位置
 lineCheck4 = 18
 setlineF = 1
 lineI = 10
@@ -115,6 +115,7 @@ HILL_CUT = 30
 HILL_COUNT = 10
 
 # 环岛
+ROUND_DIR = "Left"      # 环岛的方向，Left为左环岛，Right为右环岛
 ROUND_MAXWIDTH = 70     # 最大有效宽度，大于这个宽度视为丢线
 ROUND_COUNT0 = 13       # 最开始至少丢的行数，设成0就可以不丢
 ROUND_DIST2 = 8         # 圆形结束后最丢线的最小距离
