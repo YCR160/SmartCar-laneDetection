@@ -29,14 +29,15 @@ class CircleHelper:
             self.flag = 1
             self.count = 0
         # 上升状态，出现下降
-        elif self.flag == 1 and x < self.prev_x:
+        elif self.flag == 1:
             # 如果上升的次数不够，flag 失效
-            if self.count < ROUND_UPCOUNT:
-                self.flag = -1
-            # 否则，进入下降状态
-            else:
-                self.flag = 2
-                self.count = 0
+            if x < self.prev_x:
+                if self.count < ROUND_UPCOUNT:
+                    self.flag = -1
+                # 否则，进入下降状态
+                else:
+                    self.flag = 2
+                    self.count = 0
         # 下降状态，出现上升，flag 失效
         elif x > self.prev_x:
             self.flag = -1
@@ -138,12 +139,10 @@ class RoundaboutChecker:
         """
         检查左右两侧的圆形检测器是否符合要求
         """
-        # TODO
         self.side = self.leftCheck.check()
         return self.rightCheck.check() ^ self.side
 
     def check(self) -> int:
-        # TODO
         return self.flag == 3 and self.count >= ROUND_COUNT3
 
 

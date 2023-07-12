@@ -37,14 +37,13 @@ class Main:
         down_points = (down_width, down_height)
 
         while True:
-            start = time.time()
             ret, frame = capture.read()
             if not ret:
                 break
 
             frame = cv2.resize(frame, down_points,
                                interpolation=cv2.INTER_LINEAR)
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)    # 使用 HSV 颜色空间
+            # hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)    # 使用 HSV 颜色空间
 
             # lower_red = np.array([160, 70, 81])             # 设置需要识别的车道线颜色的阈值
             # upper_red = np.array([179, 255, 255])
@@ -71,10 +70,10 @@ class Main:
             # y = nonzero[1]
             # if countRed2 > 50:
             #     frame[nonzero] = [220, 220, 220]  # 这里将赛道中心的红色标志给去掉，防止干扰后面的赛道识别
-            fcolor1 = frame[79, 87]
-            fcolor2 = frame[60, 87]
-            fcolor1 = np.array(fcolor1)
-            fcolor2 = np.array(fcolor2)
+            # fcolor1 = frame[79, 87]
+            # fcolor2 = frame[60, 87]
+            # fcolor1 = np.array(fcolor1)
+            # fcolor2 = np.array(fcolor2)
             # aerial = cv2.warpPerspective(frame, H, (200, 200)) # 对视频帧进行透视变换，将其转换为鸟瞰图
             # cv2.imshow('g',frame)
             # cv2.waitKey(1)
@@ -87,7 +86,7 @@ class Main:
             #    frame[:,:,2] = frame[:,:,2] & mask
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # 将图像转换为灰度图
             self.imgWindow.setImg(frame) # 将图像传入 ImgWindow
-            self.imgWindow.imgProcess.work(fcolor1, fcolor2, 0, 0) # 调用 ImgProcess 的 work 函数
+            self.imgWindow.imgProcess.work(0, 0, 0, 0) # 调用 ImgProcess 的 work 函数
             # self.imgWindow.imgProcess.work(
             #     fcolor1, fcolor2, countRed, countRed2) # 调用 ImgProcess 的 work 函数
 
@@ -128,9 +127,6 @@ class Main:
             # output = cv2.putText(output,str(self.imgWindow.imgProcess.landmark["Yaw"]), (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             # out.write(self.imgWindow.imgProcess.canny2)
             # process = mp.Process(target=show, args=(DealFlag, ImgQueue))
-            end = time.time()
-            print(1/(end-start))  # 计算帧率
-            # print(frame)
             # if cv2.waitKey(2) == ord('q'):
             #    break
 

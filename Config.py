@@ -66,23 +66,22 @@ forkK = 0.4
 forkRed = 30
 
 kn = 3
-outF1 = 5           # 出环标志
+outF1 = 9           # 出环标志
 searchKn = 2
 numberCheck = 1     # 查找的斜率数量
 numberF = 2         # 找弯道系数
-Fcheck1 = 110       # 靠近弯道
+Fcheck1 = 120       # 靠近弯道
 Fcheck2 = 200       # 较为靠近弯道
 FitC = 0            # 直道拟合距离
 Scheck = 20         # 直道计数
 Scheck2 = 10        # 置信数量
-CcheckD = 5         # 进环位置
-CcheckU = 30
+CcheckD = 22        # 进环位置
+CcheckU = 35
 Kcheck = -1.5       # 出弯斜率
 testF1 = 1          # 用于 searchRow 函数版本的选择，已弃用
-testF2 = 0
 gauss = 0
-cannydown = 150
-cannyup = 250
+cannydown = 250
+cannyup = 300
 Q = 0.1
 R = 2
 sleeptime = 0
@@ -102,7 +101,7 @@ STARTLINE_PADDING = 30
 STARTLINE_COUNT = 15
 lineCheck1 = 20
 lineCheck2 = 70
-lineCheck3 = 20     # 入库位置
+lineCheck3 = 35     # 入库位置
 lineCheck4 = 18
 setlineF = 1
 lineI = 10
@@ -115,9 +114,9 @@ HILL_CUT = 30
 HILL_COUNT = 10
 
 # 环岛
-ROUND_DIR = "Left"      # 环岛的方向，Left为左环岛，Right为右环岛
+ROUND_DIR = "Left"      # 环岛的方向，Left 为左环岛，Right 为右环岛
 ROUND_MAXWIDTH = 70     # 最大有效宽度，大于这个宽度视为丢线
-ROUND_COUNT0 = 13       # 最开始至少丢的行数，设成0就可以不丢
+ROUND_COUNT0 = 20       # 最开始至少丢的行数，设成0就可以不丢
 ROUND_DIST2 = 8         # 圆形结束后最丢线的最小距离
 ROUND_COUNT3 = 3        # 再次搜到线的最小行数
 
@@ -127,7 +126,7 @@ ROUND_DOWNCOUNT = 3     # 原图上圆环边变小后变大的最小个数
 ROUNDENTER_GETCOUNT = 3     # 入环时从上往下搜的最少有效点
 ROUNDENTER_LOSTCOUNT = 3    # 搜到有效点后再至少丢的行数
 
-inRoundYaw = 1.3
+inRoundYaw = -1.1
 roundCheck = 40
 roundCheck0 = 10
 # 逆透视变换

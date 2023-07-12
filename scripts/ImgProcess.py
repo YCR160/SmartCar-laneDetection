@@ -200,6 +200,7 @@ class ImgProcess:
 
     def calcK(self, i, k):
         "以行号和'斜率'计算列号"
+        # cdef int b = (M >> 1) - (k * (N - 1) // 3)
         b = (M >> 1) - (k * (N - 1) // 3)
         return ((k * i) // 3) + b
 
@@ -207,6 +208,9 @@ class ImgProcess:
         "沿'斜率'k 搜索黑色，并返回最后一个搜索到的黑色像素点的行号"
         # if draw and color is None:
         #     color = (randint(0, 255), randint(0, 255), randint(0, 255))a
+        # cdef int i = N - 1
+        # cdef int j = 0
+        # cdef int[:,:] canny = np.array(self.canny, dtype = np.int32)
         i = N - 1
         j = 0
         canny = np.array(self.canny, dtype = np.int32)
@@ -228,6 +232,7 @@ class ImgProcess:
             draw:
             color:
         """
+        # cdef int col = 0 # 用于存储搜索到的列号
         col = 0 # 用于存储搜索到的列号
         if isRight: # 搜索方向是否向右？可能吧……
             # 根据 isRight 的值，计算出需要搜索的像素点范围
@@ -254,6 +259,7 @@ class ImgProcess:
         self.I = self.K = 0x7FFFFFFF
         self.F = 0
         self.frontForkChecker.reset()
+        # cdef int i = 0
         i = 0
         for k in range(-6, 7):
             i = self.searchK(k)
@@ -285,10 +291,15 @@ class ImgProcess:
         leftx = []
         right = []
         rightx = []
+        # cdef int J = 0
+        # cdef float width = 0
+        # cdef int[2] side
+        # cdef float pi
+        # cdef float[2] pj
         J = 0
         width = 0
         side = [0, M - 1]
-        pi
+        pi = 0
         pj = [0, M - 1]
         self.roundaboutChecker.reset()
         for u in range(2):
@@ -356,6 +367,7 @@ class ImgProcess:
         "获取中线"
         px = list(range(-I_SHIFT, N_ - I_SHIFT))
         self.rightYaw = 0
+        # cdef float a, b, c
         a, b, c = 0, 0, 0
         for u in range(2):
             if self.fitter[u].n > getM:
@@ -379,12 +391,18 @@ class ImgProcess:
 
     def getTarget(self):
         "获取参考点位置"
-        x = self.paraCurve.perpendicular()
-        y = self.paraCurve.val(x)
+        # cdef float x = self.paraCurve.perpendicular()
+        # cdef float y = self.paraCurve.val(x)
 
-        l = x - DIST
-        r = x
-        dx, dy, d
+        # cdef float l = x - DIST
+        # cdef float r = x
+        # cdef float dx, dy, d
+        x = self.paraCurve.perpendicular()  # 垂足
+        y = self.paraCurve.val(x)           # 垂足纵坐标
+
+        l = x - DIST    # 垂足向上 DIST
+        r = x           # 垂足
+        dx, dy, d = 0, 0, 0
         for _ in range(5):
             self.X1 = (l + r) / 2
             self.Y1 = self.paraCurve.val(self.X1)
@@ -402,9 +420,12 @@ class ImgProcess:
 
     def checkStartLine(self, i: int) -> bool:
         "检测起跑线"
+        # cdef int pre = self.sobel(i, STARTLINE_PADDING, 1) > THRESHLOD
+        # cdef int count = 0
+        # cdef int cur
         pre = self.sobel(i, STARTLINE_PADDING, 1) > THRESHLOD
         count = 0
-        cur
+        cur = 0
         for j in range(STARTLINE_PADDING + 1, M - STARTLINE_PADDING):
             cur = self.sobel(i, j, 1) > THRESHLOD
             count += pre ^ cur
@@ -416,14 +437,16 @@ class ImgProcess:
         anss = 0
         self.C = 0
         self.roundaboutEntering.reset()
-        m
-        pi, pj_, pj
-        for i in range(self.I + 1, N, 2):
-            m = self.calcK(i, self.K)
-            side = [self.searchRow(i, m, u) for u in range(2)]
-            if self.checkJ(side[U]):
-                pi, pj_ = axisTransform(i, side[U ^ 1], self.PERMAT)
-                pi, pj = axisTransform(i, side[U], self.PERMAT)
+        # cdef int m
+        # cdef float pi, pj_, pj
+        m = 0
+        pi, pj_, pj = 0, 0, 0
+        for i in range(self.I + 1, N, 2): # 从前面直道中线能够延伸的最远距离到画面的下边界
+            m = self.calcK(i, self.K) # 以行号和斜率计算列号
+            side = [self.searchRow(i, m, u) for u in range(2)] # 从给定的行号 I 和列号 J 处，沿着该行向左或向右搜索第一个非零像素点的列号
+            if self.checkJ(side[U]): # 如果没有越界
+                pi, pj_ = axisTransform(i, side[U ^ 1], self.PERMAT) # 将行列号转换为坐标，即为右上角点
+                pi, pj = axisTransform(i, side[U], self.PERMAT) # 将行列号转换为坐标，即为左上角点
                 self.roundaboutEntering.update(pi, pj, pj_)
             else:
                 self.roundaboutEntering.lost()
@@ -440,38 +463,33 @@ class ImgProcess:
     def roundaboutGetInMid(self, U: bool = False):
         "入环岛获取中线"
         U ^= 1
-
-        # dpi, dpj
-        dpi, dpj = axisTransform(N - 1, self.searchRow(N - 1, M >> 1, U), self.PERMAT)
+        dpi, dpj = axisTransform(N - 1, self.searchRow(N - 1, M >> 1, U), self.PERMAT) # 将行列号转换为坐标，即为画面最后一行中间的点
         # self.ppoint((self.roundaboutEntering.i, self.roundaboutEntering.j)), self.ppoint((dpi, dpj))
-        self.fitter[U].twoPoints(dpi, dpj, self.roundaboutEntering.i, self.roundaboutEntering.j)
+        self.fitter[U].twoPoints(dpi, dpj, self.roundaboutEntering.i, self.roundaboutEntering.j) # 以车所在的点作为极值点，过左上角点拟合抛物线
 
-        px = list(range(-I_SHIFT, N_ - I_SHIFT))
-        py = [self.fitter[U].val(v) for v in px]
+        # px = list(range(-I_SHIFT, N_ - I_SHIFT))
+        # py = [self.fitter[U].val(v) for v in px]
 
-        self.fitter[U].shift(X_POS, WIDTH, U)
-        self.paraCurve.set(*self.fitter[U].res)
+        self.fitter[U].shift(X_POS, WIDTH, U)   # 将拟合的抛物线向左移动 X_POS 个像素
+        self.paraCurve.set(*self.fitter[U].res) # 将拟合的抛物线的系数保存到 paraCurve 中
 
-        px = list(range(-I_SHIFT, N_ - I_SHIFT))
-        py = [self.paraCurve.val(v) for v in px]
+        # px = list(range(-I_SHIFT, N_ - I_SHIFT))
+        # py = [self.paraCurve.val(v) for v in px]
 
     def roundaboutGetOutMid(self, U: bool = False):
         U ^= 1
-
-        #pi0, pj0
-        pi0, pj0 = axisTransform(N - 1, self.searchRow(N - 1, M >> 1, U), self.PERMAT)
-        #pi1, pj1
+        pi0, pj0 = axisTransform(N - 1, self.searchRow(N - 1, M >> 1, U), self.PERMAT) # 将行列号转换为坐标，即为画面最后一行中间的点
         pi1, pj1 = axisTransform(self.I, PADDING if U else M - PADDING, self.PERMAT)
         self.fitter[U].twoPoints(pi0, pj0, pi1, pj1)
 
-        px = list(range(-I_SHIFT, N_ - I_SHIFT))
-        py = [self.fitter[U].val(v) for v in px]
+        # px = list(range(-I_SHIFT, N_ - I_SHIFT))
+        # py = [self.fitter[U].val(v) for v in px]
 
         self.fitter[U].shift(X_POS, WIDTH, U)
         self.paraCurve.set(*self.fitter[U].res)
 
-        px = list(range(-I_SHIFT, N_ - I_SHIFT))
-        py = [self.paraCurve.val(v) for v in px]
+        # px = list(range(-I_SHIFT, N_ - I_SHIFT))
+        # py = [self.paraCurve.val(v) for v in px]
 
     def kalman(self,z_measure,x_last=0,p_last=0,Q=0.018,R=0.0542):
         x_mid = x_last
@@ -482,12 +500,12 @@ class ImgProcess:
         p_last = p_now
         x_last = x_now
         return x_now,p_last,x_last
-
+    
     def work(self, fcolor1, fcolor2, countRed, countRed2):
         self.rightYaw = 0
         self.C = 0
-        start = time.time()
-        #self.image_data = cv2.GaussianBlur(self.image_data,(gauss,gauss),0)
+        # start = time.time()
+        # self.image_data = cv2.GaussianBlur(self.image_data,(gauss,gauss),0)
         self.canny = cv2.Canny(self.image_data, cannydown, cannyup)
         kernel = np.ones((kn, kn), np.uint8)
         self.canny = cv2.dilate(self.canny, kernel)
@@ -512,7 +530,10 @@ class ImgProcess:
         "正常"
         self.getEdge()
         self.landmark["Hill"] = self.hillChecker[0].check() and self.hillChecker[1].check() and self.hillChecker[0].calc() + self.hillChecker[1].calc() > HILL_DIFF
-        self.landmark["Roundabout"] = "None" if not self.roundaboutChecker.check() else "Right" if self.roundaboutChecker.side else "Left"
+        # 如果 side，则 Right
+        # 如果 !side，则 Left
+        # 如果 check 不返回，则 None
+        self.landmark["Roundabout"] = "None" if not self.roundaboutChecker.check() else "Left" if self.roundaboutChecker.side else "Right"
         self.landmark["Fork"] = self.frontForkChecker.res and (self.sideForkChecker[0].res or self.sideForkChecker[1].res)
         midYaw = 0
 
@@ -525,10 +546,9 @@ class ImgProcess:
             if self.rightK <= Kcheck:
                 Kflag = 1
         self.Kflag = Kflag
-        # print("lk=",self.leftK)
-        # print("rk=",self.rightK)
+        
         if self.landmark["Roundabout"] == ROUND_DIR or rFlag > 0:
-            isRight = True
+            isRight = False
             if rFlag == 0:
                 rFlag = 1
             if self.roundaboutGetCorner(isRight):
@@ -538,7 +558,7 @@ class ImgProcess:
                 self.getTarget()
                 self.solve()
                 if rFlag == 2:
-                    self.landmark["Yaw"] = inRoundYaw * (1 if isRight else -1)
+                    self.landmark["Yaw"] = inRoundYaw
                 if rFlag == 3 and self.I < outF1 and roundC > roundCheck:
                     rFlag = 0
                     roundC = 0
@@ -549,12 +569,12 @@ class ImgProcess:
                 if rFlag == 3 and self.I < outF1 and roundC > roundCheck:
                     rFlag = 0
                     roundC = 0
-                isRight = True
+                isRight = False
                 self.roundaboutGetOutMid(isRight)
                 self.getTarget()
                 self.solve()
                 if rFlag == 2 and roundC < roundCheck0:
-                    self.landmark["Yaw"] = inRoundYaw * (1 if isRight else -1)
+                    self.landmark["Yaw"] = inRoundYaw
 
         elif self.getMid(True) and (self.F < Fcheck1 or Kflag == 1):
             self.getTarget()
@@ -586,10 +606,10 @@ class ImgProcess:
         pred = 0
         self.pred = 0
         lastYaw  = -self.K
-        if testF2:
-            pred,p_last,x_last = self.kalman(self.landmark["Yaw"],x_last,p_last,Q,R)
-            self.pred = pred
-            self.landmark["Yaw"] = pred
+        # if testF2:
+        #     pred,p_last,x_last = self.kalman(self.landmark["Yaw"],x_last,p_last,Q,R)
+        #     self.pred = pred
+        #     self.landmark["Yaw"] = pred
         if rFlag == 0:
             turnFlag = 0
         self.landmark["Yaw"] = self.landmark["Yaw"] - (M - 1 - self.right - self.left) * midK
@@ -616,11 +636,6 @@ class ImgProcess:
             if (not self.checkStartLine(lineCheck2)) and lineF1 == 2:
                 lineF1 = 0
                 lineF2 = 1
-
-        print("lineF2=",lineF2, end=" ")
-        print("lineF1 = ",lineF1, end=" ")
-        print("Yaw = ", self.landmark["Yaw"], end=" ")
-        print("RoundF = ", rFlag, end=" ")
 
         # 串口通信
         if ser.isOpen():

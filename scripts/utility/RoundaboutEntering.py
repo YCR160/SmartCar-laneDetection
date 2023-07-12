@@ -12,17 +12,16 @@ class RoundaboutEntering:
     def reset(self) -> None:
         self.flag = 0
         self.count = 0
-        self.i = self.j = 0.0 # 左侧点的 x 坐标 i 和右侧点的 x 坐标 j
+        self.i = self.j = 0.0
 
     def update(self, pi: float, pj: float, pj_: float) -> None:
         """
         更新环形道路的状态
-        :param pi:
-        :param pj:
-        :param pj_:
+        :param pi: 直道中线能延伸到的最远的点所在的行
+        :param pj: 直道中线能延伸到的最远的点向左寻找到的边线的列，即左上角点
+        :param pj_: 直道中线能延伸到的最远的点向右寻找到的边线的列，即右上角点
         :return: None
         """
-        # TODO
         # 最大有效宽度 ROUND_MAXWIDTH，大于这个宽度视为丢线
         if abs(pj_ - pj) > ROUND_MAXWIDTH:
             return self.lost()
@@ -30,7 +29,7 @@ class RoundaboutEntering:
             self.count += 1
         else:
             self.count = self.flag = 1
-        self.i, self.j = pi, pj
+        self.i, self.j = pi, pj # 这里存储的是进圆环方向的角点
 
     def lost(self) -> None:
         if self.flag == 0:
