@@ -17,7 +17,7 @@ import time
 # shared_capture = cv2.VideoCapture(0)
 # from scripts.Main import Main
 
-def work(DealFlag, ImgQueue, Frame):
+def work(DealFlag, ImgQueue, Frame, DetectionResult):
     """
     主运行进程
     :param DealFlag: 共享内存变量，用于标记是否有图像可处理
@@ -27,7 +27,7 @@ def work(DealFlag, ImgQueue, Frame):
     # 获取当前脚本文件的绝对路径
     full_path = os.path.dirname(os.path.realpath(__file__))
     Config = getConfig(full_path)
-    img_processor = Main(Config, DealFlag, ImgQueue, Frame)
+    img_processor = Main(Config, DealFlag, ImgQueue, Frame, DetectionResult)
     # 不断从 ImgQueue 中获取待处理的图像，并调用 Main 对象的方法进行处理，直到 DealFlag 为 0
     img_processor.mainloop()
 
@@ -48,7 +48,7 @@ def show(DealFlag, ImgQueue):
             # 等待 5 毫秒，以允许窗口显示图像
             cv2.waitKey(5)
 
-def detection(Frame):
+def detection(Frame, DetectionResult):
     system_config_path = "../PaddleLiteDemo/configs/detection/ssd_mobilenet_v1/usbcamera.json"
     print("SystemConfig Path: {}".format(system_config_path))
     Det.g_system_config = Det.SystemConfig(system_config_path)
@@ -83,6 +83,7 @@ def detection(Frame):
         start = time.time()
         predict_result = Det.predict(frame, timer)
         end = time.time()
+        DetectionResult.put(predict_result)
         # print("result_len", len(predict_result))
         # for result in predict_result:
         #     print("result_index: ", result.type)
@@ -116,11 +117,12 @@ if __name__ == "__main__":
     ImgQueue = mp.Queue()           # 用于存储待处理的图像，先进先出队列，实现不同进程数据交互
     DealFlag = mp.Value('B', 0)     # DealFlag为 1 则表示有待处理图片，为 0 则表示没有待处理图片
     Frame = mp.Queue()              # 用于存储原始图像，实现不同进程数据交互
+    DetectionResult = mp.Queue()    # 用于存储检测结果，实现不同进程数据交互
     Mps = []                        # 用于存储多个进程对象
 
-    Mps.append(mp.Process(target=work, args=(DealFlag, ImgQueue, Frame)))
+    Mps.append(mp.Process(target=work, args=(DealFlag, ImgQueue, Frame, DetectionResult)))
     Mps.append(mp.Process(target=show, args=(DealFlag, ImgQueue)))
-    Mps.append(mp.Process(target=detection, args=(Frame,)))
+    Mps.append(mp.Process(target=detection, args=(Frame, DetectionResult)))
 
     # 列表推导式启动 Mps 列表中的所有进程
     [Mp.start() for Mp in Mps]

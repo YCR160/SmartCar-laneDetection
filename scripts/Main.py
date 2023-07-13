@@ -24,7 +24,7 @@ capture = cv2.VideoCapture(0)
 class Main:
     # def show(self, DealFlag, ImgQueue):
 
-    def __init__(self, Config, DealFlag, ImgQueue, Frame) -> None:
+    def __init__(self, Config, DealFlag, ImgQueue, Frame, DetectionResult) -> None:
         from .ImgWindow import ImgWindow
         # 帧大小缩小到宽度为 176 像素，高度为 80 像素
         down_width, down_height = 176, 80
@@ -51,6 +51,16 @@ class Main:
             frame = np.array(frame)
             frame = cv2.resize(frame, down_points,
                                interpolation=cv2.INTER_LINEAR)
+
+            detectionresult = 0
+            detectionresult_flag = 0
+            # 取出最后一个检测结果
+            while not DetectionResult.empty():
+                detectionresult = DetectionResult.get()
+                detectionresult_flag = 1
+
+            if detectionresult_flag == 1:
+                print(detectionresult)
 
             self.Config = Config
             self.imgWindow = ImgWindow(self)
