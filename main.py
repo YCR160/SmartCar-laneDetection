@@ -56,10 +56,9 @@ def detection(Frame, DetectionResult):
     system_config_root = system_config_path[:system_config_path.rfind("/")]
     Det.g_model_config = Det.ModelConfig(os.path.join(system_config_root, model_config_path))
 
-    display = Det.Display("PaddleLiteDetectionDemo")
+    # display = Det.Display("PaddleLiteDetectionDemo")
     timer = Det.Timer("Predict", 100)
     # capture = Det.createCapture(Det.g_system_config.input_type, Det.g_system_config.input_path)
-    # capture.cap = shared_capture
     # if capture is None:
     #     exit(-1)
 
@@ -79,11 +78,13 @@ def detection(Frame, DetectionResult):
                 frame = Frame.get()
                 frame_flag = 1
 
-        origin_frame = frame.copy()
-        start = time.time()
-        predict_result = Det.predict(frame, timer)
-        end = time.time()
-        DetectionResult.put(predict_result)
+        DetectionResult.put(Det.predict(frame, timer))
+
+        # origin_frame = frame.copy()
+        # start = time.time()
+        # predict_result = Det.predict(frame, timer)
+        # end = time.time()
+        # DetectionResult.put(predict_result)
         # print("result_len", len(predict_result))
         # for result in predict_result:
         #     print("result_index: ", result.type)
@@ -94,20 +95,17 @@ def detection(Frame, DetectionResult):
         # print("result",predict_result, end-start)
         # print("frame_size: ", origin_frame.size)
         # Det.drawResults(origin_frame, predict_result)
-        if Det.g_system_config.predict_log_enable:
-            Det.printResults(origin_frame, predict_result)
+        # if Det.g_system_config.predict_log_enable:
+        #     Det.printResults(origin_frame, predict_result)
 
         # if Det.g_system_config.predict_log_enable and capture.getType() != "image":
         #     display.putFrame(origin_frame)
-        # if capture.getType() == "image":
-        #     cv2.imwrite("DetectionResult.jpg", origin_frame)
-        #     break
 
         # if Det.g_system_config.predict_time_log_enable:
         #     timer.printAverageRunTime()
 
-    if Det.g_system_config.display_enable and Det.g_system_config.input_type != "image":
-        display.stop()
+    # if Det.g_system_config.display_enable and Det.g_system_config.input_type != "image":
+    #     display.stop()
 
     # capture.stop()
     return

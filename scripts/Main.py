@@ -26,6 +26,11 @@ class Main:
 
     def __init__(self, Config, DealFlag, ImgQueue, Frame, DetectionResult) -> None:
         from .ImgWindow import ImgWindow
+        from .ResultProcess import ResultProcess
+
+        self.Config = Config
+        self.resultProcess = ResultProcess()
+
         # 帧大小缩小到宽度为 176 像素，高度为 80 像素
         down_width, down_height = 176, 80
         down_points = (down_width, down_height)
@@ -47,32 +52,32 @@ class Main:
             #         frame = Frame.get()
             #         frame_flag = 1
 
-            frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta) # 调整亮度和对比度
+            frame = cv2.convertScaleAbs(
+                frame, alpha=alpha, beta=beta)  # 调整亮度和对比度
             frame = np.array(frame)
             frame = cv2.resize(frame, down_points,
                                interpolation=cv2.INTER_LINEAR)
 
             detectionresult = 0
             detectionresult_flag = 0
-            # 取出最后一个检测结果
+            # 取出最后一个识别结果
             while not DetectionResult.empty():
                 detectionresult = DetectionResult.get()
                 detectionresult_flag = 1
 
-            if detectionresult_flag == 1:
-                print(detectionresult)
-
-            self.Config = Config
             self.imgWindow = ImgWindow(self)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # 将图像转换为灰度图
-            self.imgWindow.setImg(frame) # 将图像传入 ImgWindow
-            self.imgWindow.imgProcess.work(0, 0, 0, 0) # 调用 ImgProcess 的 work 函数
-            # self.imgWindow.imgProcess.work(
-            #     fcolor1, fcolor2, countRed, countRed2) # 调用 ImgProcess 的 work 函数
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 将图像转换为灰度图
+            self.imgWindow.setImg(frame)  # 将图像传入 ImgWindow
+
+            if detectionresult_flag == 1:
+                self.resultProcess.update(detectionresult)
+
+            self.imgWindow.imgProcess.work(
+                self.resultProcess.getResult())  # 将识别结果传入 ImgProcess
 
             # 后面是一些调试输出
             output = self.imgWindow.imgProcess.canny2
-            color = (0, 0, 255) # 蓝色
+            color = (0, 0, 255)  # 蓝色
             # print("F========================", self.imgWindow.imgProcess.F)
 
             # S 值小于等于 Scheck，则将标记颜色设置为黄色
