@@ -7,7 +7,7 @@ import numpy as np
 import multiprocessing as mp
 from Config import *
 
-# capture = cv2.VideoCapture(0)
+capture = cv2.VideoCapture(0)
 # # print(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 # capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
 # capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
@@ -34,15 +34,18 @@ class Main:
         beta = 30  # 亮度调整系数
 
         while True:
-            # ret, frame = capture.read()
-            # if not ret:
-            #     break
-            frame = 0
-            frame_flag = 0
-            while frame_flag == 0:
-                while not Frame.empty():
-                    frame = Frame.get()
-                    frame_flag = 1
+            ret, frame = capture.read()
+            if not ret:
+                break
+
+            Frame.put(frame)
+
+            # frame = 0
+            # frame_flag = 0
+            # while frame_flag == 0:
+            #     while not Frame.empty():
+            #         frame = Frame.get()
+            #         frame_flag = 1
 
             frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta) # 调整亮度和对比度
             frame = np.array(frame)

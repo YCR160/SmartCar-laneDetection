@@ -58,10 +58,10 @@ def detection(Frame):
 
     display = Det.Display("PaddleLiteDetectionDemo")
     timer = Det.Timer("Predict", 100)
-    capture = Det.createCapture(Det.g_system_config.input_type, Det.g_system_config.input_path)
+    # capture = Det.createCapture(Det.g_system_config.input_type, Det.g_system_config.input_path)
     # capture.cap = shared_capture
-    if capture is None:
-        exit(-1)
+    # if capture is None:
+    #     exit(-1)
 
     ret = Det.predictorInit()
     if ret != 0:
@@ -69,9 +69,16 @@ def detection(Frame):
         sys.exit(-1)
 
     while True:
-        frame = capture.getFrame()
-        Frame.put(frame)
+        # frame = capture.getFrame()
+        # Frame.put(frame)
         # print(len(frame[0]))
+
+        frame_flag = 0
+        while frame_flag == 0:
+            while not Frame.empty():
+                frame = Frame.get()
+                frame_flag = 1
+
         origin_frame = frame.copy()
         start = time.time()
         predict_result = Det.predict(frame, timer)
@@ -101,7 +108,7 @@ def detection(Frame):
     if Det.g_system_config.display_enable and Det.g_system_config.input_type != "image":
         display.stop()
 
-    capture.stop()
+    # capture.stop()
     return
 
 
